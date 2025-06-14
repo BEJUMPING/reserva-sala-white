@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reserva Sala White</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 400px;
+      margin: auto;
+      background: #f0f8ff;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    label { display: block; margin-top: 10px; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #0077cc;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .success {
+      color: green;
+      margin-top: 15px;
+    }
+    .error {
+      color: red;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Reservar Sala White</h2>
+  <form id="reservaForm">
+    <label>Nombre / Name:</label>
+    <input type="text" name="name" required>
+
+    <label>Email:</label>
+    <input type="email" name="email" required>
+
+    <label>Fecha / Date:</label>
+    <input type="date" name="date" required>
+
+    <label>Hora de inicio / Start Time:</label>
+    <input type="time" name="startTime" min="08:00" max="20:00" required>
+
+    <label>Hora de fin / End Time:</label>
+    <input type="time" name="endTime" min="08:00" max="20:00" required>
+
+    <input type="hidden" name="sala" value="Sala White">
+
+    <button type="submit">Reservar / Book</button>
+    <p class="success" id="mensaje"></p>
+    <p class="error" id="error"></p>
+  </form>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwMIxVl4gfmhuU33BN35U8r-MDw48Ud63FXRGNWwHHVaFFILB2hIZOpi7HaU2DMYcuYmA/exec"; // ¡Verifica que esta URL sea la correcta de tu despliegue de Apps Script!
+
+    document.getElementById("reservaForm").addEventListener("submit", function(e) {
+      e.preventDefault(); // Previene el envío del formulario tradicional
+
+      const form = this;
+      const start = form.startTime.value;
+      const end = form.endTime.value;
+
+      const mensaje = document.getElementById("mensaje");
+      const error = document.getElementById("error");
+      mensaje.textContent = ""; // Limpia mensajes anteriores
+      error.textContent = "";   // Limpia errores anteriores
+
+      // Validación de duración máxima de 2 horas
+      const startDate = new Date("1970-01-01T" + start + ":00");
+      const endDate = new Date("1970-01-01T" + end + ":00");
+      const diff = (endDate - startDate) / (1000 * 60); // diferencia en minutos
+
+      if (diff <= 0 || diff > 120) {
+        error.textContent = "❌ La duración debe ser de máximo 2 horas y la hora de fin debe ser posterior a la de inicio.";
+        return; // Detiene la ejecución si la validación falla
+      }
+
+      // **AQUÍ EMPIEZA EL CÓDIGO QUE FALTABA PARA ENVIAR LOS DATOS**
+
+      const formData = new FormData(form);
+      // Convertir FormData a un objeto plano para JSON
+      const data = {};
+      for (let [key, value] of formData.entries()) {
+        data[key] = value;
+      }
+
+      // Asegúrate de que el objeto 'data' incluye todos los campos que doPost espera
+      // (name, email, date, startTime, endTime, sala)
+
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify(data), // Envía los datos como JSON
+        headers: {
+          'Content-Type': 'application/json' // Indica que el cuerpo es JSON
+        }
+      })
+      .then(response => response.json()) // Espera una respuesta JSON de tu Apps Script
+      .then(result => {
+        if (result.result === "success") {
+          mensaje.textContent = "✅ Reserva realizada con éxito!";
+          form.reset(); // Opcional: Limpia el formulario después del éxito
+        } else {
+          error.textContent = "❌ Error al realizar la reserva: " + (result.message || "Error desconocido.");
+          console.error("Error en Apps Script:", result.message); // Muestra el error en la consola
+        }
+      })
+      .catch(fetchError => {
+        error.textContent = "❌ Error de conexión. Inténtalo de nuevo.";
+        console.error("Error de fetch:", fetchError); // Muestra el error de red en la consola
+      });
+    });
+  </script>
+</body>
+</html>
